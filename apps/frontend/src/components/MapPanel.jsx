@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, GeoJSON, ZoomControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -57,6 +57,29 @@ function MapController({ selectedDistrict, results, activeIdx, layerRefs }) {
 
 export default function MapPanel({ selectedDistrict, results, activeIdx, onSelectSubdivision }) {
   const layerRefs = useRef([]);
+  const [boundaries, setBoundaries] = useState({});
+
+  useEffect(() => {
+    fetch('/districts')
+      .then((r) => r.json())
+      .then((data) => {
+        const districts = Object.keys(data);
+        Promise.all(
+          districts.map((d) =>
+            fetch(`/districts/${d}/boundary`)
+              .then((r) => r.json())
+              .then((geojson) => [d, geojson])
+              .catch(() => [d, null])
+          )
+        ).then((entries) => {
+          setBoundaries(Object.fromEntries(entries.filter(([, v]) => v)));
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  const districtBoundary = selectedDistrict ? (boundaries[selectedDistrict] ?? null) : null;
+
   const sorted = results
     ? [...results.subdivisions].sort((a, b) => b.flood_pct - a.flood_pct)
     : [];
@@ -86,6 +109,21 @@ export default function MapPanel({ selectedDistrict, results, activeIdx, onSelec
           activeIdx={activeIdx}
           layerRefs={layerRefs}
         />
+
+        {districtBoundary && (
+          <GeoJSON
+            key={`boundary-${selectedDistrict}`}
+            data={districtBoundary}
+            style={{
+              fillColor: '#3b82f6',
+              fillOpacity: 0.15,
+              color: '#60a5fa',
+              weight: 2.5,
+              opacity: 1,
+              dashArray: '6 4',
+            }}
+          />
+        )}
 
         {sorted.map((s, i) => {
           if (!s.geometry) return null;

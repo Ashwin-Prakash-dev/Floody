@@ -265,6 +265,25 @@ def list_subdivisions(district: str) -> dict:
     return {"district": district, "count": len(subdivisions), "subdivisions": subdivisions}
 
 
+@app.get("/districts/{district}/boundary", tags=["Utility"])
+def district_boundary(district: str) -> dict:
+    """Return the district boundary as a GeoJSON Feature (union of all subdivisions)."""
+    district = district.lower().strip()
+    if district not in DISTRICT_BOUNDS:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Unknown district '{district}'. Supported: {list(DISTRICT_BOUNDS.keys())}",
+        )
+    from analysis.shapefile_loader import load_subdivisions
+    gdf = load_subdivisions(district)
+    boundary = gdf.geometry.union_all()
+    return {
+        "type": "Feature",
+        "geometry": boundary.__geo_interface__,
+        "properties": {"district": district},
+    }
+
+
 @app.post("/flood-detection", response_model=FloodResponse, tags=["Analysis"])
 def start_flood_detection(
     request: FloodRequest,
