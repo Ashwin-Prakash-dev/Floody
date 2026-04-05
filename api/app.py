@@ -104,12 +104,19 @@ class FloodRequest(BaseModel):
 
 
 class SubdivisionResult(BaseModel):
-    subdivision: str
-    district: str
-    flooded_ha: float
-    total_ha: float
-    flood_pct: float
-    geometry: dict               # GeoJSON geometry
+    subdivision:       str
+    district:          str
+    flooded_ha:        float
+    total_ha:          float
+    flood_pct:         float
+    building_density:  float = 0.0
+    schools_count:     int   = 0
+    hospitals_count:   int   = 0
+    road_density:      float = 0.0
+    severity_score:    float = 0.0
+    severity_label:    str   = "LOW"
+    severity_color:    str   = "#00c8ff"
+    geometry:          dict             # GeoJSON geometry
 
 
 class FloodResponse(BaseModel):
@@ -177,7 +184,7 @@ def _run_flood_analysis(job_id: str, request: FloodRequest) -> None:
                 "total_flooded_ha":   result.total_flooded_ha,
                 "total_area_ha":      result.total_area_ha,
                 "flood_pct_overall":  result.flood_pct_overall,
-                "subdivisions":       result.subdivisions,
+                "subdivisions":       severity_dicts,
                 "flood_mask_tif":     result.flood_mask_tif,
             }
         )
@@ -188,6 +195,42 @@ def _run_flood_analysis(job_id: str, request: FloodRequest) -> None:
         logger.exception("[%s] Analysis failed: %s", job_id, exc)
         _jobs[job_id]["status"] = JobStatus.FAILED
         _jobs[job_id]["error"]  = str(exc)
+    
+        # 5. Fetch vulnerability factors from OSM
+    logger.info("[%s] Fetching OSM vulnerability factors…", job_id)
+    from analysis.vulnerability import fetch_vulnerability_factors
+    from analysis.severity_model import SeverityModel
+    from config.settings import SHAPEFILE_SUBDIV_COL
+
+    vuln_df = fetch_vulnerability_factors(
+        subdivisions_gdf,
+        subdiv_col=SHAPEFILE_SUBDIV_COL,
+    )
+
+    # 6. Run K-Means severity clustering
+    logger.info("[%s] Running severity clustering…", job_id)
+    model = SeverityModel(n_clusters=3)
+    severity_results = model.fit_predict(result.subdivisions, vuln_df)
+
+    # Convert severity results to dicts for the job store
+    severity_dicts = [
+        {
+            "subdivision":      r.subdivision,
+            "district":         r.district,
+            "flooded_ha":       r.flooded_ha,
+            "total_ha":         r.total_ha,
+            "flood_pct":        r.flood_pct,
+            "building_density": r.building_density,
+            "schools_count":    r.schools_count,
+            "hospitals_count":  r.hospitals_count,
+            "road_density":     r.road_density,
+            "severity_score":   r.severity_score,
+            "severity_label":   r.severity_label,
+            "severity_color":   r.severity_color,
+            "geometry":         r.geometry,
+        }
+        for r in severity_results
+    ]
 
 
 # ── Endpoints ──────────────────────────────────────────────────────────────

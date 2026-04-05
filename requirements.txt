@@ -16,3 +16,4 @@ shapely
 # Scientific
 numpy
 scikit-image
+scikit-learn
