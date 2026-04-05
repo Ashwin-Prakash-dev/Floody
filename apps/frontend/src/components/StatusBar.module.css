@@ -1,0 +1,14 @@
+.bar {
+  padding: 12px 20px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar.error { color: var(--warn); }
+.bar.success { color: var(--success); }
