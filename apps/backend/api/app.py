@@ -175,6 +175,41 @@ def _run_flood_analysis(job_id: str, request: FloodRequest) -> None:
             slope_mask_tif=masks.get("slope"),
         )
 
+        # 5. Fetch vulnerability factors from OSM
+        logger.info("[%s] Fetching OSM vulnerability factors…", job_id)
+        from analysis.vulnerability import fetch_vulnerability_factors
+        from analysis.severity_model import SeverityModel
+
+        vuln_df = fetch_vulnerability_factors(
+            subdivisions_gdf,
+            subdiv_col=SHAPEFILE_SUBDIV_COL,
+        )
+
+        # 6. Run K-Means severity clustering
+        logger.info("[%s] Running severity clustering…", job_id)
+        model = SeverityModel(n_clusters=3)
+        severity_results = model.fit_predict(result.subdivisions, vuln_df)
+
+        # Convert severity results to dicts for the job store
+        severity_dicts = [
+            {
+                "subdivision":      r.subdivision,
+                "district":         r.district,
+                "flooded_ha":       r.flooded_ha,
+                "total_ha":         r.total_ha,
+                "flood_pct":        r.flood_pct,
+                "building_density": r.building_density,
+                "schools_count":    r.schools_count,
+                "hospitals_count":  r.hospitals_count,
+                "road_density":     r.road_density,
+                "severity_score":   r.severity_score,
+                "severity_label":   r.severity_label,
+                "severity_color":   r.severity_color,
+                "geometry":         r.geometry,
+            }
+            for r in severity_results
+        ]
+
         _jobs[job_id].update(
             {
                 "status":             JobStatus.COMPLETED,
@@ -195,42 +230,6 @@ def _run_flood_analysis(job_id: str, request: FloodRequest) -> None:
         logger.exception("[%s] Analysis failed: %s", job_id, exc)
         _jobs[job_id]["status"] = JobStatus.FAILED
         _jobs[job_id]["error"]  = str(exc)
-    
-        # 5. Fetch vulnerability factors from OSM
-    logger.info("[%s] Fetching OSM vulnerability factors…", job_id)
-    from analysis.vulnerability import fetch_vulnerability_factors
-    from analysis.severity_model import SeverityModel
-    from config.settings import SHAPEFILE_SUBDIV_COL
-
-    vuln_df = fetch_vulnerability_factors(
-        subdivisions_gdf,
-        subdiv_col=SHAPEFILE_SUBDIV_COL,
-    )
-
-    # 6. Run K-Means severity clustering
-    logger.info("[%s] Running severity clustering…", job_id)
-    model = SeverityModel(n_clusters=3)
-    severity_results = model.fit_predict(result.subdivisions, vuln_df)
-
-    # Convert severity results to dicts for the job store
-    severity_dicts = [
-        {
-            "subdivision":      r.subdivision,
-            "district":         r.district,
-            "flooded_ha":       r.flooded_ha,
-            "total_ha":         r.total_ha,
-            "flood_pct":        r.flood_pct,
-            "building_density": r.building_density,
-            "schools_count":    r.schools_count,
-            "hospitals_count":  r.hospitals_count,
-            "road_density":     r.road_density,
-            "severity_score":   r.severity_score,
-            "severity_label":   r.severity_label,
-            "severity_color":   r.severity_color,
-            "geometry":         r.geometry,
-        }
-        for r in severity_results
-    ]
 
 
 # ── Endpoints ──────────────────────────────────────────────────────────────
