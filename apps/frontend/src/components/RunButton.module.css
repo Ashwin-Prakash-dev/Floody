@@ -1,0 +1,34 @@
+.section {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  border: none;
+  color: #000;
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn:hover:not(:disabled) { background: #33d4ff; }
+
+.btn:disabled:not(.loading) {
+  background: var(--muted);
+  color: var(--bg);
+  cursor: not-allowed;
+}
+
+.btn.loading {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  cursor: not-allowed;
+}
