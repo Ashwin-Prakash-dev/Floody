@@ -18,7 +18,7 @@ function floodColor(pct) {
   return 'rgba(255,255,255,0.15)';
 }
 
-function MapController({ selectedDistrict, results, activeIdx }) {
+function MapController({ selectedDistrict, results, activeIdx, layerRefs }) {
   const map = useMap();
   const prevResultsRef = useRef(null);
 
@@ -45,20 +45,24 @@ function MapController({ selectedDistrict, results, activeIdx }) {
 
   useEffect(() => {
     if (activeIdx === null || !results) return;
-    const sorted = [...results.subdivisions].sort((a, b) => b.flood_pct - a.flood_pct);
-    const s = sorted[activeIdx];
-    if (!s?.geometry) return;
-    const bounds = L.geoJSON(s.geometry).getBounds();
+    const layer = layerRefs.current[activeIdx];
+    if (!layer) return;
+    layer.openPopup();
+    const bounds = layer.getBounds();
     if (bounds.isValid()) map.flyToBounds(bounds.pad(0.3), { duration: 0.8 });
-  }, [activeIdx, results, map]);
+  }, [activeIdx, results, map, layerRefs]);
 
   return null;
 }
 
 export default function MapPanel({ selectedDistrict, results, activeIdx, onSelectSubdivision }) {
+  const layerRefs = useRef([]);
   const sorted = results
     ? [...results.subdivisions].sort((a, b) => b.flood_pct - a.flood_pct)
     : [];
+
+  // Reset layer refs when results change
+  if (!results) layerRefs.current = [];
 
   return (
     <div className={styles.wrap}>
@@ -80,6 +84,7 @@ export default function MapPanel({ selectedDistrict, results, activeIdx, onSelec
           selectedDistrict={selectedDistrict}
           results={results}
           activeIdx={activeIdx}
+          layerRefs={layerRefs}
         />
 
         {sorted.map((s, i) => {
@@ -97,6 +102,7 @@ export default function MapPanel({ selectedDistrict, results, activeIdx, onSelec
                 opacity: 0.6,
               }}
               onEachFeature={(_, layer) => {
+                layerRefs.current[i] = layer;
                 layer.bindPopup(`
                   <div class="popup-title">${s.subdivision}</div>
                   <div class="popup-row"><span>Flooded</span><span class="popup-val">${s.flooded_ha} ha</span></div>
