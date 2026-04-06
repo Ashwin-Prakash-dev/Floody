@@ -2,6 +2,7 @@
 fastapi
 uvicorn[standard]
 pydantic>=2.0
+python-dotenv
 
 # Google Earth Engine
 earthengine-api
