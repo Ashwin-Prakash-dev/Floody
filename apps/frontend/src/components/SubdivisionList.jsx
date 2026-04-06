@@ -1,17 +1,10 @@
 import { useEffect, useRef } from 'react';
 import styles from './SubdivisionList.module.css';
 
-function floodColor(pct) {
-  if (pct > 30) return '#ff6b35';
-  if (pct > 10) return '#ffaa00';
-  if (pct > 0) return '#00c8ff';
-  return 'rgba(255,255,255,0.15)';
-}
-
 function SubdivisionItem({ subdivision, index, isActive, onClick }) {
   const itemRef = useRef(null);
   const barRef = useRef(null);
-  const color = floodColor(subdivision.flood_pct);
+  const color = subdivision.severity_color || 'rgba(255,255,255,0.15)';
 
   // Animate bar fill on mount with staggered delay
   useEffect(() => {

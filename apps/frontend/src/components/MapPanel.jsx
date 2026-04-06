@@ -11,13 +11,6 @@ const DISTRICT_CENTERS = {
   ernakulam: [10.05, 76.45],
 };
 
-function floodColor(pct) {
-  if (pct > 30) return '#ff6b35';
-  if (pct > 10) return '#ffaa00';
-  if (pct > 0) return '#00c8ff';
-  return 'rgba(255,255,255,0.15)';
-}
-
 function MapController({ selectedDistrict, results, activeIdx, layerRefs }) {
   const map = useMap();
   const prevResultsRef = useRef(null);
@@ -130,7 +123,7 @@ export default function MapPanel({ selectedDistrict, results, activeIdx, isDark,
 
         {sorted.map((s, i) => {
           if (!s.geometry) return null;
-          const color = floodColor(s.flood_pct);
+          const color = s.severity_color || 'rgba(255,255,255,0.15)';
           return (
             <GeoJSON
               key={`${results.job_id}-${i}`}
