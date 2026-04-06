@@ -1,0 +1,102 @@
+OVERPASS API QUERY EXAMPLES FOR POSTMAN
+========================================
+
+API Endpoint:
+POST https://overpass-api.de/api/interpreter
+
+Content-Type: application/x-www-form-urlencoded
+
+================================================================================
+EXAMPLE 1: Buildings in Wayanad
+================================================================================
+
+Body (form-data):
+data=[out:json][timeout:30];
+(
+  node["building"](11.4,75.7,11.9,76.4);
+  way["building"](11.4,75.7,11.9,76.4)(geom);
+);
+out center;
+
+
+================================================================================
+EXAMPLE 2: Schools in Wayanad
+================================================================================
+
+Body (form-data):
+data=[out:json][timeout:30];
+(
+  node["amenity"~"school|college|university|kindergarten"](11.4,75.7,11.9,76.4);
+  way["amenity"~"school|college|university|kindergarten"](11.4,75.7,11.9,76.4)(geom);
+);
+out center;
+
+
+================================================================================
+EXAMPLE 3: Hospitals in Wayanad
+================================================================================
+
+Body (form-data):
+data=[out:json][timeout:30];
+(
+  node["amenity"~"hospital|clinic|doctors|health_centre"](11.4,75.7,11.9,76.4);
+  way["amenity"~"hospital|clinic|doctors|health_centre"](11.4,75.7,11.9,76.4)(geom);
+);
+out center;
+
+
+================================================================================
+EXAMPLE 4: Roads in Wayanad (with geometry)
+================================================================================
+
+Body (form-data):
+data=[out:json][timeout:30];
+(
+  node["highway"~"motorway|trunk|primary|secondary|tertiary|unclassified|residential|service"](11.4,75.7,11.9,76.4);
+  way["highway"~"motorway|trunk|primary|secondary|tertiary|unclassified|residential|service"](11.4,75.7,11.9,76.4)(geom);
+);
+out center;
+
+
+================================================================================
+BBOX COORDINATES REFERENCE
+================================================================================
+
+Format: south,west,north,east (in degrees)
+
+Wayanad:    11.4,75.7,11.9,76.4
+Idukki:      9.6,76.6,10.4,77.4
+Ernakulam:   9.8,76.1,10.3,76.8
+
+Coordinates come from DISTRICT_BOUNDS in config/settings.py
+
+
+================================================================================
+KEY PARAMETERS
+================================================================================
+
+[out:json]          = JSON output format
+[timeout:30]        = Query timeout in seconds (reduce from 60 to 30 for faster response)
+(geom)              = Include full geometry for ways (needed for road length calculation)
+out center          = Return center point for ways/nodes
+
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+If you get 400 Bad Request:
+  1. Reduce [timeout:XX] to 30 or lower
+  2. Simplify the query (remove (geom), use smaller bbox)
+  3. Check bbox format: must be (south, west, north, east)
+  4. Wait a few minutes - Overpass has rate limits
+
+If you get 504 Gateway Timeout:
+  1. Reduce bbox size
+  2. Remove (geom) parameter
+  3. Increase [timeout:XX] slightly
+  4. Wait and retry later
+
+If you get 429 Too Many Requests:
+  1. Wait 5+ minutes before retrying
+  2. Add longer delays between queries (try 10 seconds instead of 1 second)
