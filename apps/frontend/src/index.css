@@ -8,11 +8,24 @@
   --accent:    #00c8ff;
   --warn:      #ff6b35;
   --success:   #00e676;
-  --muted:     #4a5568;
-  --text:      #e2e8f0;
-  --text-dim:  #718096;
+  --muted:     #a0aec0;
+  --text:      #ffffff;
+  --text-dim:  #cbd5e0;
   --font-mono: 'Space Mono', monospace;
   --font-ui:   'Syne', sans-serif;
+}
+
+:root.light {
+  --bg:        #f0f4f8;
+  --surface:   #ffffff;
+  --panel:     #f8fafc;
+  --border:    #e2e8f0;
+  --accent:    #0284c7;
+  --warn:      #ea580c;
+  --success:   #16a34a;
+  --muted:     #64748b;
+  --text:      #0f172a;
+  --text-dim:  #475569;
 }
 
 html, body, #root {

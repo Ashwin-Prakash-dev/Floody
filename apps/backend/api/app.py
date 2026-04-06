@@ -275,8 +275,15 @@ def district_boundary(district: str) -> dict:
             detail=f"Unknown district '{district}'. Supported: {list(DISTRICT_BOUNDS.keys())}",
         )
     from analysis.shapefile_loader import load_subdivisions
+    from shapely.geometry import Polygon, MultiPolygon
     gdf = load_subdivisions(district)
     boundary = gdf.geometry.union_all()
+    # Keep only the largest polygon (drops small disconnected islands)
+    if boundary.geom_type == 'MultiPolygon':
+        boundary = max(boundary.geoms, key=lambda p: p.area)
+    # Strip interior holes (water bodies)
+    if boundary.geom_type == 'Polygon':
+        boundary = Polygon(boundary.exterior)
     return {
         "type": "Feature",
         "geometry": boundary.__geo_interface__,

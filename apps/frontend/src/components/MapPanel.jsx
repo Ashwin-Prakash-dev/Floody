@@ -55,7 +55,7 @@ function MapController({ selectedDistrict, results, activeIdx, layerRefs }) {
   return null;
 }
 
-export default function MapPanel({ selectedDistrict, results, activeIdx, onSelectSubdivision }) {
+export default function MapPanel({ selectedDistrict, results, activeIdx, isDark, onSelectSubdivision }) {
   const layerRefs = useRef([]);
   const [boundaries, setBoundaries] = useState({});
 
@@ -97,7 +97,10 @@ export default function MapPanel({ selectedDistrict, results, activeIdx, onSelec
       >
         <ZoomControl position="topright" />
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          key={isDark ? 'dark' : 'light'}
+          url={isDark
+            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+            : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'}
           attribution="© OpenStreetMap © CartoDB"
           subdomains="abcd"
           maxZoom={19}
@@ -115,10 +118,10 @@ export default function MapPanel({ selectedDistrict, results, activeIdx, onSelec
             key={`boundary-${selectedDistrict}`}
             data={districtBoundary}
             style={{
-              fillColor: '#3b82f6',
-              fillOpacity: 0.15,
-              color: '#60a5fa',
-              weight: 2.5,
+              fillColor: isDark ? '#3b82f6' : '#1d4ed8',
+              fillOpacity: 0.12,
+              color: isDark ? '#60a5fa' : '#1d4ed8',
+              weight: 3.5,
               opacity: 1,
               dashArray: '6 4',
             }}

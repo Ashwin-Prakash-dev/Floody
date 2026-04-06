@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './components/Header.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import MapPanel from './components/MapPanel.jsx';
@@ -10,6 +10,11 @@ export default function App() {
   const [eventDate, setEventDate] = useState('2019-08-10');
   const [baselineDate, setBaselineDate] = useState('2019-04-01');
   const [activeIdx, setActiveIdx] = useState(null);
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('light', !isDark);
+  }, [isDark]);
 
   const { statusMsg, statusType, results, isLoading, runAnalysis } = useFloodAnalysis();
 
@@ -29,7 +34,7 @@ export default function App() {
 
   return (
     <div className={styles.app}>
-      <Header />
+      <Header isDark={isDark} onToggleTheme={() => setIsDark((d) => !d)} />
       <Sidebar
         selectedDistrict={selectedDistrict}
         eventDate={eventDate}
@@ -49,6 +54,7 @@ export default function App() {
         selectedDistrict={selectedDistrict}
         results={results}
         activeIdx={activeIdx}
+        isDark={isDark}
         onSelectSubdivision={handleSelectSubdivision}
       />
     </div>
