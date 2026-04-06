@@ -47,10 +47,10 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RasterData:
     """Holds a 2-D numpy array together with its affine transform and CRS."""
-    data: np.ndarray        # shape (H, W), dtype float32; nodata → np.nan
+    data: np.ndarray        # shape (H, W), dtype float32; nodata → -9999.0
     transform: object       # affine.Affine
     crs: str
-    nodata: float = np.nan
+    nodata: float = -9999.0
 
 
 @dataclass
@@ -75,12 +75,16 @@ def _read_raster(path: Path) -> RasterData:
         nodata = src.nodata
         transform = src.transform
         crs = src.crs.to_string()
+        logger.debug(
+            "Read raster %s: shape=%s, transform=%s, crs=%s, nodata=%s",
+            path.name, data.shape, transform, crs, nodata
+        )
 
     if nodata is not None:
-        data[data == nodata] = np.nan
+        data[data == nodata] = -9999.0
 
     # GEE sometimes outputs 0 for masked pixels in SAR exports
-    data[data == 0] = np.nan
+    data[data == 0] = -9999.0
 
     return RasterData(data=data, transform=transform, crs=crs)
 
@@ -103,8 +107,8 @@ def _reproject_to_match(source: RasterData, target: RasterData) -> RasterData:
         dst_transform=target.transform,
         dst_crs=target.crs,
         resampling=Resampling.bilinear,
-        src_nodata=np.nan,
-        dst_nodata=np.nan,
+        src_nodata=-9999.0,
+        dst_nodata=-9999.0,
     )
     return RasterData(data=dst_data, transform=target.transform, crs=target.crs)
 
@@ -129,11 +133,11 @@ def to_db(raster: RasterData) -> RasterData:
     Zeros and negatives are masked.
     """
     data = raster.data.copy()
-    invalid = (data <= 0) | np.isnan(data)
+    invalid = (data <= 0) | (data == -9999.0)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
-        data = 10.0 * np.log10(np.where(invalid, np.nan, data))
-    data[invalid] = np.nan
+        data = 10.0 * np.log10(np.where(invalid, -9999.0, data))
+    data[invalid] = -9999.0
     return RasterData(data=data, transform=raster.transform, crs=raster.crs)
 
 
@@ -162,7 +166,7 @@ def compute_threshold(diff: RasterData, fixed_threshold_db: Optional[float] = No
         logger.info("Using fixed threshold: %.2f dB", fixed_threshold_db)
         return float(fixed_threshold_db)
 
-    valid = diff.data[~np.isnan(diff.data)]
+    valid = diff.data[diff.data != -9999.0]
     if valid.size == 0:
         raise ValueError("Difference raster has no valid pixels.")
 
@@ -188,7 +192,8 @@ def _load_ancillary_mask(tif_path: Optional[Path], shape: tuple, transform, crs:
         data = src.read(1).astype(np.float32)
         file_transform = src.transform
         file_crs = src.crs.to_string()
-    non_zero = (data != 0) & ~np.isnan(data)
+    nodata = getattr(src, 'nodata', -9999.0)
+    non_zero = (data != 0) & (data != nodata)
     raw = RasterData(data=non_zero.astype(np.float32), transform=file_transform, crs=file_crs)
     target = RasterData(data=np.zeros(shape, dtype=np.float32), transform=transform, crs=crs)
     matched = _reproject_to_match(raw, target)
@@ -209,7 +214,7 @@ def build_flood_mask(
       - permanent water (JRC mask)
       - steep terrain (slope mask)
     """
-    flooded = (diff.data < threshold_db) & ~np.isnan(diff.data)
+    flooded = (diff.data < threshold_db) & (diff.data != -9999.0)
 
     # Remove permanent water
     jrc = _load_ancillary_mask(jrc_mask_tif, diff.data.shape, diff.transform, diff.crs)
@@ -219,7 +224,7 @@ def build_flood_mask(
     slope = _load_ancillary_mask(slope_mask_tif, diff.data.shape, diff.transform, diff.crs)
     flooded &= ~slope
 
-    mask_data = np.where(np.isnan(diff.data), np.nan, flooded.astype(np.float32))
+    mask_data = np.where(diff.data == -9999.0, -9999.0, flooded.astype(np.float32))
     n_flooded = int(flooded.sum())
     logger.info(
         "Flood mask built: %d flooded pixels (threshold=%.2f dB)", n_flooded, threshold_db
@@ -240,7 +245,7 @@ def save_raster(raster: RasterData, out_path: Path) -> None:
         dtype="float32",
         crs=raster.crs,
         transform=raster.transform,
-        nodata=np.nan,
+        nodata=raster.nodata,
         compress="lzw",
     ) as dst:
         dst.write(raster.data, 1)
@@ -288,28 +293,38 @@ def zonal_flood_stats(
     """
     # Reproject subdivisions to raster CRS if needed
     raster_crs = flood_mask.crs
-    if subdivisions.crs.to_string() != raster_crs:
+    subdiv_crs_before = subdivisions.crs.to_string()
+    logger.info("Before reprojection: subdiv_crs=%s, raster_crs=%s", subdiv_crs_before, raster_crs)
+    logger.info("Subdivisions bounds: %s", subdivisions.total_bounds)
+    logger.info("Raster transform: %s, shape: %s", flood_mask.transform, flood_mask.data.shape)
+
+    if subdiv_crs_before != raster_crs:
+        logger.info("Reprojecting subdivisions: %s → %s", subdiv_crs_before, raster_crs)
         subdivisions = subdivisions.to_crs(raster_crs)
+        logger.info("After reprojection bounds: %s", subdivisions.total_bounds)
+    else:
+        logger.info("Subdivisions CRS matches raster: %s", raster_crs)
 
     px_ha = _pixel_area_ha(flood_mask.transform)
 
-    # Save flood mask to a temp file for rasterstats
-    with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as tmp:
-        tmp_path = Path(tmp.name)
-    save_raster(flood_mask, tmp_path)
+    logger.info("Zonal stats: using in-memory raster (bypassing GDAL temp file)")
+    logger.info("Raster shape=%s, crs=%s", flood_mask.data.shape, flood_mask.crs)
+    logger.info("Subdivisions count=%d, bounds=%s", len(subdivisions), subdivisions.total_bounds)
 
-    try:
-        stats = zonal_stats(
-            subdivisions,
-            str(tmp_path),
-            stats=["count", "sum"],
-            nodata=np.nan,
-            all_touched=False,
-        )
-    finally:
-        tmp_path.unlink(missing_ok=True)
+    # Use rasterstats with in-memory data instead of temp file (avoids GDAL compatibility issues)
+    stats = zonal_stats(
+        subdivisions,
+        flood_mask.data,
+        affine=flood_mask.transform,
+        crs=flood_mask.crs,
+        stats=["count", "sum"],
+        nodata=-9999.0,
+        all_touched=True,  # Include pixels that touch polygon boundary
+    )
+    logger.info("Zonal stats returned %d results", len(stats))
 
     records = []
+    zero_count = 0
     for row, stat in zip(subdivisions.itertuples(), stats):
         total_px   = int(stat.get("count") or 0)
         flooded_px = int(stat.get("sum") or 0)
@@ -319,6 +334,13 @@ def zonal_flood_stats(
 
         subdiv_name  = getattr(row, subdiv_col,  "Unknown")
         district_name = getattr(row, district_col, "Unknown")
+
+        if total_px == 0:
+            zero_count += 1
+            logger.warning(
+                "  %-30s  ⚠️  ZERO PIXELS (raster not overlapping?) crs=%s bound=%s",
+                subdiv_name, subdivisions.crs, row.geometry.bounds
+            )
 
         records.append(
             {
@@ -335,6 +357,10 @@ def zonal_flood_stats(
         logger.debug(
             "  %-30s  flooded: %5.1f ha  (%.1f%%)", subdiv_name, flooded_ha, pct
         )
+
+    if zero_count > 0:
+        logger.warning("⚠️  %d/%d subdivisions have zero pixels (CRS mismatch or no raster overlap)",
+                      zero_count, len(records))
 
     records.sort(key=lambda r: r["flood_pct"], reverse=True)
     return records

@@ -361,6 +361,13 @@ def _job_to_response(job_id: str) -> FloodResponse:
             flooded_ha=s["flooded_ha"],
             total_ha=s["total_ha"],
             flood_pct=s["flood_pct"],
+            building_density=s.get("building_density", 0.0),
+            schools_count=s.get("schools_count", 0),
+            hospitals_count=s.get("hospitals_count", 0),
+            road_density=s.get("road_density", 0.0),
+            severity_score=s.get("severity_score", 0.0),
+            severity_label=s.get("severity_label", "LOW"),
+            severity_color=s.get("severity_color", "#00c8ff"),
             geometry=s["geometry"],
         )
         for s in j.get("subdivisions", [])

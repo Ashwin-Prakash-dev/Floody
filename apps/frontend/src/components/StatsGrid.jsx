@@ -19,10 +19,6 @@ export default function StatsGrid({ results }) {
         <div className={styles.value}>{results.total_area_ha.toFixed(0)}</div>
         <div className={styles.label}>Total Area (ha)</div>
       </div>
-      <div className={styles.cell}>
-        <div className={styles.value}>{results.threshold_db}</div>
-        <div className={styles.label}>Threshold (dB)</div>
-      </div>
     </div>
   );
 }

@@ -117,12 +117,25 @@ class SeverityModel:
         flood_df = pd.DataFrame(flood_stats)[
             ["subdivision", "district", "flood_pct", "flooded_ha", "total_ha", "geometry"]
         ]
+
+        logger.info("Flood stats subdivisions: %d unique", flood_df["subdivision"].nunique())
+        logger.debug("Flood subdivisions: %s", sorted(flood_df["subdivision"].unique()))
+
+        logger.info("Vulnerability subdivisions: %d unique", vulnerability_df["subdivision"].nunique())
+        logger.debug("Vulnerability subdivisions: %s", sorted(vulnerability_df["subdivision"].unique()))
+
         merged = flood_df.merge(
             vulnerability_df[["subdivision", "building_density",
                                "schools_count", "hospitals_count", "road_density"]],
             on="subdivision",
             how="left",
         )
+
+        # Check for unmatched rows
+        unmatched = merged[merged["building_density"].isna()]
+        if len(unmatched) > 0:
+            logger.warning("MERGE MISMATCH: %d subdivisions from flood stats have no OSM data", len(unmatched))
+            logger.warning("Unmatched subdivisions: %s", sorted(unmatched["subdivision"].unique()))
 
         # Fill missing vulnerability data with zeros (subdivisions not found in OSM)
         for col in ["building_density", "schools_count", "hospitals_count", "road_density"]:
