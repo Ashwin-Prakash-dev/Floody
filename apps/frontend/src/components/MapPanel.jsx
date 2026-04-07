@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, GeoJSON, ZoomControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import MapLegend from './MapLegend.jsx';
 import styles from './MapPanel.module.css';
 
 const DISTRICT_CENTERS = {
@@ -151,7 +150,6 @@ export default function MapPanel({ selectedDistrict, results, activeIdx, isDark,
         })}
       </MapContainer>
 
-      {results && <MapLegend />}
     </div>
   );
 }

@@ -1,6 +1,30 @@
 import { useState, useRef, useCallback } from 'react';
 
 const API = '';  // empty = same origin (proxied by Vite in dev)
+const CACHE_KEY = 'flood_analysis_cache';
+
+function getCacheKey(district, eventDate, baselineDate) {
+  return `${district}::${eventDate}::${baselineDate}`;
+}
+
+function getCache(district, eventDate, baselineDate) {
+  try {
+    const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+    return cache[getCacheKey(district, eventDate, baselineDate)] || null;
+  } catch {
+    return null;
+  }
+}
+
+function setCache(district, eventDate, baselineDate, data) {
+  try {
+    const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+    cache[getCacheKey(district, eventDate, baselineDate)] = data;
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  } catch (e) {
+    console.warn('Failed to cache results:', e);
+  }
+}
 
 export function useFloodAnalysis() {
   const [statusMsg, setStatusMsg] = useState('Ready. Select a district and run analysis.');
@@ -20,8 +44,21 @@ export function useFloodAnalysis() {
     stopPolling();
     setIsLoading(true);
     setResults(null);
-    setStatusMsg('Submitting job…');
     setStatusType('');
+
+    // Check cache first
+    const cached = getCache(district, eventDate, baselineDate);
+    if (cached) {
+      setResults(cached);
+      setStatusMsg(
+        `✓ ${cached.event_date} vs ${cached.baseline_date} · ${cached.subdivisions.length} subdivisions analysed (cached)`,
+      );
+      setStatusType('success');
+      setIsLoading(false);
+      return;
+    }
+
+    setStatusMsg('Submitting job…');
 
     try {
       const res = await fetch(`${API}/flood-detection`, {
@@ -54,6 +91,7 @@ export function useFloodAnalysis() {
               `✓ ${data.event_date} vs ${data.baseline_date} · ${data.subdivisions.length} subdivisions analysed`,
             );
             setStatusType('success');
+            setCache(district, eventDate, baselineDate, data);
             setResults(data);
           } else if (data.status === 'failed') {
             stopPolling();

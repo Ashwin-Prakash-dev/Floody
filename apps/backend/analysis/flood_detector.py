@@ -330,7 +330,7 @@ def zonal_flood_stats(
         flooded_px = int(stat.get("sum") or 0)
         flooded_ha = flooded_px * px_ha
         total_ha   = total_px * px_ha
-        pct        = (flooded_px / total_px * 100) if total_px > 0 else 0.0
+        pct        = (flooded_px / total_px * 1000) if total_px > 0 else 0.0
 
         subdiv_name  = getattr(row, subdiv_col,  "Unknown")
         district_name = getattr(row, district_col, "Unknown")
@@ -429,7 +429,7 @@ def detect_floods(
     flooded_px = int(np.nansum(flood_mask.data))
     total_ha   = valid_px   * px_ha
     flooded_ha = flooded_px * px_ha
-    overall_pct = (flooded_px / valid_px * 100) if valid_px > 0 else 0.0
+    overall_pct = (flooded_px / valid_px * 1000) if valid_px > 0 else 0.0
 
     subdivision_stats = zonal_flood_stats(
         flood_mask, subdivisions_gdf, subdiv_col, district_col
