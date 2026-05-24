@@ -1,9 +1,20 @@
 import styles from './DistrictSelector.module.css';
 
 const DISTRICTS = [
-  { id: 'idukki', label: 'Idukki' },
-  { id: 'wayanad', label: 'Wayanad' },
-  { id: 'ernakulam', label: 'Ernakulam' },
+  { id: 'thiruvananthapuram', label: 'Thiruvananthapuram' },
+  { id: 'kollam',             label: 'Kollam' },
+  { id: 'pathanamthitta',     label: 'Pathanamthitta' },
+  { id: 'alappuzha',          label: 'Alappuzha' },
+  { id: 'kottayam',           label: 'Kottayam' },
+  { id: 'idukki',             label: 'Idukki' },
+  { id: 'ernakulam',          label: 'Ernakulam' },
+  { id: 'thrissur',           label: 'Thrissur' },
+  { id: 'palakkad',           label: 'Palakkad' },
+  { id: 'malappuram',         label: 'Malappuram' },
+  { id: 'kozhikode',          label: 'Kozhikode' },
+  { id: 'wayanad',            label: 'Wayanad' },
+  { id: 'kannur',             label: 'Kannur' },
+  { id: 'kasaragod',          label: 'Kasaragod' },
 ];
 
 export default function DistrictSelector({ selected, onSelect }) {

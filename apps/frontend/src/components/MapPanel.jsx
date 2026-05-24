@@ -5,9 +5,20 @@ import 'leaflet/dist/leaflet.css';
 import styles from './MapPanel.module.css';
 
 const DISTRICT_CENTERS = {
-  idukki:    [10.0, 77.0],
-  wayanad:   [11.65, 76.05],
-  ernakulam: [10.05, 76.45],
+  thiruvananthapuram: [8.60,  77.05],
+  kollam:             [9.00,  76.90],
+  pathanamthitta:     [9.40,  76.95],
+  alappuzha:          [9.40,  76.40],
+  kottayam:           [9.70,  76.75],
+  idukki:             [10.00, 77.00],
+  ernakulam:          [10.05, 76.45],
+  thrissur:           [10.45, 76.45],
+  palakkad:           [10.80, 76.65],
+  malappuram:         [11.00, 76.20],
+  kozhikode:          [11.40, 75.95],
+  wayanad:            [11.65, 76.05],
+  kannur:             [12.00, 75.70],
+  kasaragod:          [12.50, 75.25],
 };
 
 function MapController({ selectedDistrict, results, activeIdx, layerRefs }) {
