@@ -38,7 +38,11 @@ SHAPEFILE_DIR.mkdir(parents=True, exist_ok=True)
 
 REPO_URL = "https://github.com/geohacker/kerala.git"
 
-TARGET_DISTRICTS = {"Idukki", "Wayanad", "Ernakulam"}
+TARGET_DISTRICTS = {
+    "Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha",
+    "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad",
+    "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod",
+}
 
 # Column names in the downloaded GeoJSONs
 DISTRICT_COL = "DISTRICT"

@@ -16,9 +16,20 @@ GEE_PROJECT_ID = os.getenv('GEE_PROJECT_ID', 'rotterdam-484003')
 GCS_BUCKET = os.getenv('GCS_BUCKET', 'your-gcs-bucket')
 
 DISTRICT_BOUNDS = {
-    'idukki': {'bbox': [76.6, 9.6, 77.4, 10.4], 'display': 'Idukki'},
-    'wayanad': {'bbox': [75.7, 11.4, 76.4, 11.9], 'display': 'Wayanad'},
-    'ernakulam': {'bbox': [76.1, 9.8, 76.8, 10.3], 'display': 'Ernakulam'},
+    'thiruvananthapuram': {'bbox': [76.70, 8.30, 77.40, 8.90], 'display': 'Thiruvananthapuram'},
+    'kollam':             {'bbox': [76.50, 8.70, 77.30, 9.30], 'display': 'Kollam'},
+    'pathanamthitta':     {'bbox': [76.60, 9.10, 77.30, 9.70], 'display': 'Pathanamthitta'},
+    'alappuzha':          {'bbox': [76.10, 9.10, 76.70, 9.70], 'display': 'Alappuzha'},
+    'kottayam':           {'bbox': [76.40, 9.40, 77.10, 10.00], 'display': 'Kottayam'},
+    'idukki':             {'bbox': [76.60, 9.60, 77.40, 10.40], 'display': 'Idukki'},
+    'ernakulam':          {'bbox': [76.10, 9.80, 76.80, 10.30], 'display': 'Ernakulam'},
+    'thrissur':           {'bbox': [76.00, 10.10, 76.90, 10.80], 'display': 'Thrissur'},
+    'palakkad':           {'bbox': [76.30, 10.40, 77.00, 11.20], 'display': 'Palakkad'},
+    'malappuram':         {'bbox': [75.80, 10.70, 76.60, 11.30], 'display': 'Malappuram'},
+    'kozhikode':          {'bbox': [75.60, 11.10, 76.30, 11.70], 'display': 'Kozhikode'},
+    'wayanad':            {'bbox': [75.70, 11.40, 76.40, 11.90], 'display': 'Wayanad'},
+    'kannur':             {'bbox': [75.20, 11.70, 76.20, 12.30], 'display': 'Kannur'},
+    'kasaragod':          {'bbox': [74.80, 12.20, 75.70, 12.80], 'display': 'Kasaragod'},
 }
 
 S1_COLLECTION = 'COPERNICUS/S1_GRD'
